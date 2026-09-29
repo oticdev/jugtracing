@@ -1,0 +1,9 @@
+target/
+!.mvn/wrapper/maven-wrapper.jar
+*.log
+.DS_Store
+
+# IntelliJ (shared run configs in .run/ are committed)
+.idea/workspace.xml
+.idea/shelf/
+out/

@@ -1,0 +1,62 @@
+### Naija JUG tracing demo: every request goes through the gateway (:8080)
+# Every request carries W3C baggage customer.tier=gold: it shows up on spans and log lines in every
+# service, and gold traces are always kept by the Collector's tail sampling.
+@gateway = http://localhost:8080
+@baggage = customer.tier=gold
+
+### 1. What's on the menu?
+GET {{gateway}}/api/inventory
+baggage: {{baggage}}
+
+### 2. Happy path: order jollof (gateway -> order -> inventory x2 -> Postgres -> Kafka -> notification)
+POST {{gateway}}/api/orders
+baggage: {{baggage}}
+Content-Type: application/json
+
+{ "sku": "JOLLOF-001", "quantity": 2, "customerEmail": "ada@naijajug.ng" }
+
+### 3. Out of stock: only 5 zobo in stock -> order saved as REJECTED, event still published
+POST {{gateway}}/api/orders
+baggage: {{baggage}}
+Content-Type: application/json
+
+{ "sku": "ZOBO-001", "quantity": 50, "customerEmail": "ada@naijajug.ng" }
+
+### 4. Unknown SKU -> 404 from inventory, surfaced by order-service
+POST {{gateway}}/api/orders
+baggage: {{baggage}}
+Content-Type: application/json
+
+{ "sku": "SHAWARMA-001", "quantity": 1, "customerEmail": "ada@naijajug.ng" }
+
+### 5. Fetch orders
+GET {{gateway}}/api/orders
+baggage: {{baggage}}
+
+### 6. Chaos: make inventory slow (applies to every inventory call, and an order makes two)
+POST {{gateway}}/api/inventory/chaos
+baggage: {{baggage}}
+Content-Type: application/json
+
+{ "latencyMs": 1500, "failureRate": 0.0 }
+
+### 7. Chaos: make inventory fail half the time -> order-service answers 502
+POST {{gateway}}/api/inventory/chaos
+baggage: {{baggage}}
+Content-Type: application/json
+
+{ "latencyMs": 0, "failureRate": 0.5 }
+
+### 8. Order under chaos (run a few times)
+POST {{gateway}}/api/orders
+baggage: {{baggage}}
+Content-Type: application/json
+
+{ "sku": "SUYA-001", "quantity": 1, "customerEmail": "ada@naijajug.ng" }
+
+### 9. Calm down: reset chaos
+POST {{gateway}}/api/inventory/chaos
+baggage: {{baggage}}
+Content-Type: application/json
+
+{ "latencyMs": 0, "failureRate": 0.0 }

@@ -1,0 +1,17 @@
+server:
+  port: 8761
+
+spring:
+  application:
+    name: discovery-server
+
+eureka:
+  instance:
+    hostname: localhost
+  client:
+    register-with-eureka: false
+    fetch-registry: false
+  server:
+    # Faster feedback on stage: drop dead instances quickly, no self-preservation.
+    enable-self-preservation: false
+    eviction-interval-timer-in-ms: 5000

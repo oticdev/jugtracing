@@ -1,0 +1,87 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: order-service
+  threads:
+    virtual:
+      enabled: true
+  datasource:
+    url: ${ORDERS_DB_URL:jdbc:postgresql://localhost:5433/orders_db}
+    username: ${DB_USERNAME:jug}
+    password: ${DB_PASSWORD:jug}
+  mvc:
+    problemdetails:
+      enabled: true
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    template:
+      # Creates a producer span and writes traceparent/baggage into the Kafka record headers.
+      observation-enabled: true
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
+      properties:
+        # Consumers use their own event type, so don't leak our class name in headers.
+        spring.json.add.type.headers: false
+  http:
+    serviceclient:
+      inventory-service:
+        # lb:// = resolve the host through Eureka via Spring Cloud LoadBalancer
+        base-url: lb://inventory-service
+
+app:
+  kafka:
+    topics:
+      order-events: order-events
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka}
+  instance:
+    prefer-ip-address: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  tracing:
+    sampling:
+      # Export every trace; the OTel Collector decides what to keep (tail sampling).
+      probability: 1.0
+    baggage:
+      # W3C baggage we accept and forward (HTTP headers and Kafka headers)...
+      remote-fields: customer.tier
+      # ...copy into the MDC, so every log line carries it...
+      correlation:
+        fields: customer.tier
+      # ...and add as an attribute on every span, so TraceQL and tail sampling can use it.
+      tag-fields: customer.tier
+  opentelemetry:
+    resource-attributes:
+      "[deployment.environment]": naijajug-demo
+      "[service.namespace]": jugtracing
+    tracing:
+      export:
+        otlp:
+          endpoint: ${OTEL_COLLECTOR_URL:http://localhost:4318}/v1/traces
+    logging:
+      export:
+        otlp:
+          endpoint: ${OTEL_COLLECTOR_URL:http://localhost:4318}/v1/logs
+  otlp:
+    metrics:
+      export:
+        # No metrics backend in this demo (traces + logs only).
+        enabled: false
+
+logging:
+  pattern:
+    correlation: "[%X{traceId:-},%X{spanId:-},tier=%X{customer.tier:-}] "

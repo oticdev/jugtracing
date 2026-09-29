@@ -1,0 +1,71 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: inventory-service
+  threads:
+    virtual:
+      enabled: true
+  datasource:
+    url: ${INVENTORY_DB_URL:jdbc:postgresql://localhost:5433/inventory_db}
+    username: ${DB_USERNAME:jug}
+    password: ${DB_PASSWORD:jug}
+  mvc:
+    problemdetails:
+      enabled: true
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka}
+  instance:
+    prefer-ip-address: true
+
+inventory:
+  chaos:
+    latency-ms: 0
+    failure-rate: 0.0
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  tracing:
+    sampling:
+      # Export every trace; the OTel Collector decides what to keep (tail sampling).
+      probability: 1.0
+    baggage:
+      # W3C baggage we accept and forward (HTTP headers and Kafka headers)...
+      remote-fields: customer.tier
+      # ...copy into the MDC, so every log line carries it...
+      correlation:
+        fields: customer.tier
+      # ...and add as an attribute on every span, so TraceQL and tail sampling can use it.
+      tag-fields: customer.tier
+  opentelemetry:
+    resource-attributes:
+      "[deployment.environment]": naijajug-demo
+      "[service.namespace]": jugtracing
+    tracing:
+      export:
+        otlp:
+          endpoint: ${OTEL_COLLECTOR_URL:http://localhost:4318}/v1/traces
+    logging:
+      export:
+        otlp:
+          endpoint: ${OTEL_COLLECTOR_URL:http://localhost:4318}/v1/logs
+  otlp:
+    metrics:
+      export:
+        # No metrics backend in this demo (traces + logs only).
+        enabled: false
+
+logging:
+  pattern:
+    correlation: "[%X{traceId:-},%X{spanId:-},tier=%X{customer.tier:-}] "

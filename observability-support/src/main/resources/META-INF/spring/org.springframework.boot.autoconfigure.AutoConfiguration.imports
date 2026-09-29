@@ -1,0 +1,3 @@
+com.naijajug.tracing.observability.OpenTelemetryLoggingAutoConfiguration
+com.naijajug.tracing.observability.ObservationNoiseFilterAutoConfiguration
+com.naijajug.tracing.observability.BaggageSpanTaggingAutoConfiguration

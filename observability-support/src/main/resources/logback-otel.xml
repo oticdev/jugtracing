@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Included from each service's logback-spring.xml.
+  Log records are sent to the OpenTelemetry SDK, which exports them over OTLP (-> Collector -> Loki)
+  with the current trace_id/span_id attached automatically.
+-->
+<included>
+    <appender name="OTEL" class="io.opentelemetry.instrumentation.logback.appender.v1_0.OpenTelemetryAppender">
+        <!-- Baggage copied into the MDC by management.tracing.baggage.correlation.fields -->
+        <captureMdcAttributes>customer.tier</captureMdcAttributes>
+    </appender>
+</included>

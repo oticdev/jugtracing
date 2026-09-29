@@ -1,0 +1,10 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="All services" type="CompoundRunConfigurationType">
+    <toRun name="discovery-server" type="Application" />
+    <toRun name="inventory-service" type="Application" />
+    <toRun name="order-service" type="Application" />
+    <toRun name="notification-service" type="Application" />
+    <toRun name="api-gateway" type="Application" />
+    <method v="2" />
+  </configuration>
+</component>
